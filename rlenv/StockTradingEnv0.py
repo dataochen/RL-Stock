@@ -145,9 +145,9 @@ class StockTradingEnv(gym.Env):
         profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
         print('-'*30)
         print(f'Step: {self.current_step}')
-        print(f'Balance: {self.balance}')
-        print(f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})')
-        print(f'Avg cost for held shares: {self.cost_basis} (Total sales value: {self.total_sales_value})')
-        print(f'Net worth: {self.net_worth} (Max net worth: {self.max_net_worth})')
-        print(f'Profit: {profit}')
+        print(f'余额: {self.balance}')
+        print(f'持有股数: {self.shares_held} (总卖出股数: {self.total_shares_sold})')
+        print(f'持有股票的平均成本: {self.cost_basis} (总卖出金额: {self.total_sales_value})')
+        print(f'净值: {self.net_worth} (最大净值: {self.max_net_worth})')
+        print(f'利益: {profit}')
         return profit

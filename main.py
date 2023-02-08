@@ -14,30 +14,52 @@ font = fm.FontProperties(fname='font/wqy-microhei.ttc')
 # plt.rc('font', family='Source Han Sans CN')
 plt.rcParams['axes.unicode_minus'] = False
 
+models_dir = 'models/IPO'
+TIMESTEPS = 10000
+if not os.path.exists(models_dir):
+    os.makedirs(models_dir)
 
-def stock_trade(stock_file):
-    day_profits = []
+
+#学习
+def learn(stock_code,start_times):
+    model=''
+    if start_times:
+        model_path=f'{models_dir}/{TIMESTEPS*start_times}'
+        model = PPO2.load(model_path,get_env(stock_code))
+    else:
+        model=PPO2(MlpPolicy, get_env(stock_code), verbose=0, tensorboard_log='.\log')
+
+    for i in range(start_times, start_times+3):
+        model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False)
+         #保存训练过的模型
+        model.save(f'{models_dir}/{TIMESTEPS*i}')
+
+def get_env(stock_code):
+    stock_file = find_file('./stockdata/train', str(stock_code))
     df = pd.read_csv(stock_file)
     df = df.sort_values('date')
-
     # The algorithms require a vectorized environment to run
-    env = DummyVecEnv([lambda: StockTradingEnv(df)])
+    return DummyVecEnv([lambda: StockTradingEnv(df)])
 
-    model = PPO2(MlpPolicy, env, verbose=0, tensorboard_log='./log')
-    model.learn(total_timesteps=int(1e4))
+def re_learn(stock_code):
+    learn(stock_code)
 
-    df_test = pd.read_csv(stock_file.replace('train', 'test'))
-
-    env = DummyVecEnv([lambda: StockTradingEnv(df_test)])
+#预判 todo
+def show(stock_code,start_times):
+    model_path=f'{models_dir}/{TIMESTEPS*start_times}'
+    env=get_env(stock_code)
     obs = env.reset()
-    for i in range(len(df_test) - 1):
+    model = PPO2.load(model_path,env)
+    episodes = 2
+    for ep in range(episodes):
+        obs = env.reset()
         action, _states = model.predict(obs)
         obs, rewards, done, info = env.step(action)
-        profit = env.render()
-        day_profits.append(profit)
+        env.render()
         if done:
             break
-    return day_profits
+    env.close()
+
 
 
 def find_file(path, name):
@@ -48,42 +70,15 @@ def find_file(path, name):
                 return os.path.join(root, fname)
 
 
-def test_a_stock_trade(stock_code):
-    stock_file = find_file('./stockdata/train', str(stock_code))
 
-    daily_profits = stock_trade(stock_file)
-    fig, ax = plt.subplots()
-    ax.plot(daily_profits, '-o', label=stock_code, marker='o', ms=10, alpha=0.7, mfc='orange')
-    ax.grid()
-    plt.xlabel('step')
-    plt.ylabel('profit')
-    ax.legend(prop=font)
-    # plt.show()
-    plt.savefig(f'./img/{stock_code}.png')
-
-
-def multi_stock_trade():
-    start_code = 600000
-    max_num = 3000
-
-    group_result = []
-
-    for code in range(start_code, start_code + max_num):
-        stock_file = find_file('./stockdata/train', str(code))
-        if stock_file:
-            try:
-                profits = stock_trade(stock_file)
-                group_result.append(profits)
-            except Exception as err:
-                print(err)
-
-    with open(f'code-{start_code}-{start_code + max_num}.pkl', 'wb') as f:
-        pickle.dump(group_result, f)
 
 
 if __name__ == '__main__':
-    # multi_stock_trade()
-    test_a_stock_trade('sh.600036')
-    # ret = find_file('./stockdata/train', '600036')
-    # print(ret)
+#     multi_stock_trade()
+#     test_a_stock_trade('sh.600036')
+#     ret = find_file('./stockdata/train', '600036')
+#     print(ret)
+#     re_learn('sh.600030')
+    #learn('sh.600030',2)
+    show('sh.600030',4)
 

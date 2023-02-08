@@ -40,10 +40,11 @@ class Downloader(object):
         stock_df = self.get_codes_by_date(self.date_end)
         for index, row in stock_df.iterrows():
             print(f'processing {row["code"]} {row["code_name"]}')
+            csvName=row["code_name"].replace('*','')
             df_code = bs.query_history_k_data_plus(row["code"], self.fields,
                                                    start_date=self.date_start,
                                                    end_date=self.date_end).get_data()
-            df_code.to_csv(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv', index=False)
+            df_code.to_csv(f'{self.output_dir}/{row["code"]}.csvName.csv', index=False)
         self.exit()
 
 

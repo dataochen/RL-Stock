@@ -23,25 +23,20 @@ def stock_trade(stock_file):
     # The algorithms require a vectorized environment to run
     env = DummyVecEnv([lambda: StockTradingEnv(df)])
 
-#     model = PPO2(MlpPolicy, env, verbose=0, tensorboard_log='.\log')
-#使用训练过的模型
-    model=PPO2.load('model_cdt', env=env)
+    model = PPO2(MlpPolicy, env, verbose=0, tensorboard_log='./log')
+    model.learn(total_timesteps=int(1e4))
 
-    model.learn(total_timesteps=int(1e4),reset_num_timesteps=False)
-     #保存训练过的模型
-    model.save(f'model_cdt')
-#     df_test = pd.read_csv(stock_file.replace('train', 'test'))
+    df_test = pd.read_csv(stock_file.replace('train', 'test'))
 
-#     env = DummyVecEnv([lambda: StockTradingEnv(df_test)])
-#     obs = env.reset()
-
-#     for i in range(len(df_test) - 1):
-#         action, _states = model.predict(obs)
-#         obs, rewards, done, info = env.step(action)
-#         profit = env.render()
-#         day_profits.append(profit)
-#         if done:
-#             break
+    env = DummyVecEnv([lambda: StockTradingEnv(df_test)])
+    obs = env.reset()
+    for i in range(len(df_test) - 1):
+        action, _states = model.predict(obs)
+        obs, rewards, done, info = env.step(action)
+        profit = env.render()
+        day_profits.append(profit)
+        if done:
+            break
     return day_profits
 
 
@@ -69,7 +64,7 @@ def test_a_stock_trade(stock_code):
 
 def multi_stock_trade():
     start_code = 600000
-    max_num = 2
+    max_num = 3000
 
     group_result = []
 
@@ -85,21 +80,9 @@ def multi_stock_trade():
     with open(f'code-{start_code}-{start_code + max_num}.pkl', 'wb') as f:
         pickle.dump(group_result, f)
 
-# def multi_stock_trade(code):
-#     stock_file = find_file('./stockdata/train', str(code))
-#     if stock_file:
-#         try:
-#             profits = stock_trade(stock_file)
-#             with open(f'result/code-{code}.pkl', 'wb') as f:
-#                 pickle.dump(profits, f)
-#         except Exception as err:
-#             print(err)
-
-
 
 if __name__ == '__main__':
-#     multi_stock_trade()
+    # multi_stock_trade()
     test_a_stock_trade('sh.600036')
-#     ret = find_file('./stockdata/train', '600036')
-#     print(ret)
-
+    # ret = find_file('./stockdata/train', '600036')
+    # print(ret)

@@ -74,6 +74,8 @@ class StockTradingEnv(gym.Env):
             prev_cost = self.cost_basis * self.shares_held
             additional_cost = shares_bought * current_price
 
+            print('买入股数：'+f'{shares_bought}')
+            # todo 加上手续费
             self.balance -= additional_cost
             self.cost_basis = (
                 prev_cost + additional_cost) / (self.shares_held + shares_bought)
@@ -82,6 +84,8 @@ class StockTradingEnv(gym.Env):
         elif action_type < 2:
             # Sell amount % of shares held
             shares_sold = int(self.shares_held * amount)
+            print('卖出股数：'+f'{shares_sold}')
+            # todo 加上手续费
             self.balance += shares_sold * current_price
             self.shares_held -= shares_sold
             self.total_shares_sold += shares_sold
@@ -98,6 +102,8 @@ class StockTradingEnv(gym.Env):
     def step(self, action):
         # Execute one time step within the environment
         self._take_action(action)
+
+
         done = False
 
         self.current_step += 1
@@ -110,6 +116,7 @@ class StockTradingEnv(gym.Env):
 
         # profits
         reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
+        #todo 核心参数：惩罚力度 可以调整 -100
         reward = 1 if reward > 0 else -100
 
         if self.net_worth <= 0:

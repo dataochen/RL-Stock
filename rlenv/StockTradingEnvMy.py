@@ -59,38 +59,25 @@ class StockTradingEnv(gym.Env):
         ])
         return obs
 
-    def _take_action(self, action):
-        # Set the current price to a random price within the time step
-        current_price = random.uniform(
-            self.df.loc[self.current_step, "open"], self.df.loc[self.current_step, "close"])
-
-        action_type = action[0]
-        amount = action[1]
-
-        if action_type < 1:
-            # Buy amount % of balance in shares
-            total_possible = int(self.balance / current_price)
-            shares_bought = int(total_possible * amount)
+    def _used_action(self, action):
+        buyPrice=self.df.loc[self.current_step, "buyPrice"]
+        shares_bought=self.df.loc[self.current_step, "shares_bought"]
+        if shares_bought>0:
+            #buy
+            print('买入股数：'+f'{shares_bought}')
             prev_cost = self.cost_basis * self.shares_held
-            additional_cost = shares_bought * current_price
-
-            # print('买入股数：'+f'{shares_bought}')
-            # todo 加上手续费
+            additional_cost=buyPrice * shares_bought
             self.balance -= additional_cost
-            self.cost_basis = (
-                prev_cost + additional_cost) / (self.shares_held + shares_bought)
+            self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
             self.shares_held += shares_bought
-
-        elif action_type < 2:
-            # Sell amount % of shares held
-            shares_sold = int(self.shares_held * amount)
-            # print('卖出股数：'+f'{shares_sold}')
-            # todo 加上手续费
-            self.balance += shares_sold * current_price
+        elif shares_bought<0:
+            #sell
+            shares_sold=-shares_sold
+            print('卖出股数：'+f'{shares_sold}')
+            self.balance += shares_sold * buyPrice
             self.shares_held -= shares_sold
             self.total_shares_sold += shares_sold
-            self.total_sales_value += shares_sold * current_price
-
+            self.total_sales_value += shares_sold * buyPrice
         self.net_worth = self.balance + self.shares_held * current_price
 
         if self.net_worth > self.max_net_worth:
@@ -99,9 +86,10 @@ class StockTradingEnv(gym.Env):
         if self.shares_held == 0:
             self.cost_basis = 0
 
-    def step(self, action):
+
+    def step(self):
         # Execute one time step within the environment
-        self._take_action(action)
+        self._used_action()
 
 
         done = False
@@ -116,7 +104,6 @@ class StockTradingEnv(gym.Env):
 
         # profits
         reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
-        #todo 核心参数：惩罚力度 可以调整 -100
         reward = 1 if reward > 0 else -100
 
         if self.net_worth <= 0:

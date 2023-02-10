@@ -1,7 +1,7 @@
 import baostock as bs
 import pandas as pd
 import os
-
+import time
 
 OUTPUT = './stockdata'
 
@@ -26,6 +26,12 @@ class Downloader(object):
                       "adjustflag,turn,tradestatus,pctChg,peTTM," \
                       "pbMRQ,psTTM,pcfNcfTTM,isST"
 
+    def single(self,code):
+        df_code = bs.query_history_k_data_plus(code, self.fields,
+                                               start_date=self.date_start,
+                                               end_date=self.date_end).get_data()
+        df_code.to_csv(f'{self.output_dir}/{code}.csv', index=False)
+
     def exit(self):
         bs.logout()
 
@@ -33,28 +39,41 @@ class Downloader(object):
         print(date)
         stock_rs = bs.query_all_stock(date)
         stock_df = stock_rs.get_data()
-        print(stock_df)
         return stock_df
 
     def run(self):
         stock_df = self.get_codes_by_date(self.date_end)
         for index, row in stock_df.iterrows():
             print(f'processing {row["code"]} {row["code_name"]}')
+            if not row["code"].startswith('sh'):
+                continue
+
+            print('开始download')
             csvName=row["code_name"].replace('*','')
             df_code = bs.query_history_k_data_plus(row["code"], self.fields,
                                                    start_date=self.date_start,
                                                    end_date=self.date_end).get_data()
-            df_code.to_csv(f'{self.output_dir}/{row["code"]}.csvName.csv', index=False)
+            df_code.to_csv(f'{self.output_dir}/{row["code"]}.{csvName}.csv', index=False)
         self.exit()
 
 
-if __name__ == '__main__':
-    # 获取全部股票的日K线数据
-    mkdir('./stockdata/train')
-    downloader = Downloader('./stockdata/train', date_start='1990-01-01', date_end='2023-01-09')
-    downloader.run()
 
-    mkdir('./stockdata/test')
-    downloader = Downloader('./stockdata/test', date_start='2023-01-09', date_end='2023-02-09')
-    downloader.run()
+
+if __name__ == '__main__':
+    today=time.strftime("%Y-%m-%d",time.localtime())
+    # 获取全部股票的日K线数据
+    # mkdir('./stockdata/train')
+    # downloader = Downloader('./stockdata/train', date_start='1990-01-01', date_end=today)
+    # downloader.run()
+    #
+    # mkdir('./stockdata/test')
+    # downloader = Downloader('./stockdata/test', date_start='2023-01-09', date_end=today)
+    # downloader.run()
+
+    # mkdir('./stockdata/pre')
+    # downloader = Downloader('./stockdata/pre', date_start=today, date_end=today)
+    # downloader.run()
+
+    # downloader = Downloader('./stockdata/train', date_start='1990-01-01', date_end=today)
+    # downloader.single('sz.002230')
 
